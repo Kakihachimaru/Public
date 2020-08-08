@@ -3,7 +3,7 @@
 %        Value function iteration                     %
 %              iterate over state variable            %
 %                     F.GAO. @8/7/2020                %
-%              Last modify   @8/7/2020                %
+%              Last modify   @8/8/2020                %
 %                                                     %
 %                                                     %
 %   Current problem:                                  %
