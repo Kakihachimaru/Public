@@ -107,6 +107,9 @@ for i = 1 + (ii-1)*grid_number_k:ii*grid_number_k
 end
 end
 toc
+%3%
+load c_l_grid.mat;
+
 %utility
 u_grid = (c_grid.^nu.*(1-l_grid).^(1-nu)).^(1-1/gamma) ./ (1-1/gamma);
 u_grid(isnan(u_grid))=-inf;
