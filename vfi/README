@@ -4,4 +4,4 @@ Both %1% and %2% in labor and comsuption grid generating takes too much time.
 %2%
 Skip GPU computation if you want.
 %3%
-To run Record_simulation.f90, make sure you have prog09_05m.f90 in your folder. 
+To run Record_simulation.f90 in Fortran folder, make sure you have prog09_05m.f90 in your folder. 
