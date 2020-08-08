@@ -29,8 +29,8 @@ nu = 0.36;
 k_inf = 10;
 k_sup = 40;
 %dimensions
-grid_number_k = 800;
-grid_number_A = 20;
+grid_number_k = 500;
+grid_number_A = 21;
 total_dimension = grid_number_A * grid_number_k;
 %AR process to markov process
 [P, interval]=AR2Pi(rho,sig,grid_number_A)
@@ -118,7 +118,7 @@ max(c_grid,[],2);
 length(find(ans<0))
 max(u_grid,[],2);
 sum(ans,2);
-length(find(ans=grid_number_k))
+length(find(ans==grid_number_k))
 %
 
 
