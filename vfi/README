@@ -1,5 +1,5 @@
 %1%
 To generate c_grid and l_grid, load c_l_grid.mat.
-Both %1% and %2% takes too much time.
+Both %1% and %2% in labor and comsuption grid generating takes too much time.
 %2%
 Skip GPU computation if you want.
