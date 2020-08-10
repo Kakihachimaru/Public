@@ -3,7 +3,7 @@
 %        Value function iteration                     %
 %              iterate over state variable            %
 %                     F.GAO. @8/7/2020                %
-%              Last modify   @8/8/2020                %
+%              Last modify   @8/10/2020                %
 %                                                     %
 %                                                     %
 %   Current problem:                                  %
@@ -109,6 +109,64 @@ end
 toc
 %3%
 load c_l_grid.mat;
+
+
+%%
+%4%
+At=repmat(A,[grid_number_k,1,1]);
+At=reshape(At,[],1);
+At=repmat(At,[1,grid_number_k,1]);
+%
+l_t=1;
+k_t1 = k_nextday;
+k_t = k_grid;
+check_foc = (At .* k_t.^alpha .* l_t ^(1-alpha) - k_t1 + (1-delta)* k_t )...
+*(1-nu) - nu * (1-alpha) * (1-l_t) * At .* k_t.^alpha .* l_t .^(-alpha);
+
+check_foc=logical(check_foc>=0);
+%%
+[a,b] = size(k_grid);
+index_foc_labor = [1:a*b];
+index_foc_labor = index_foc_labor(check_foc);
+
+
+l_t_try = zeros(a,b);
+l_t_try = l_t_try(check_foc);
+
+l_grid=NaN(a,b);
+
+A_t_try = At(check_foc);
+k_t1_try = k_nextday(check_foc);
+k_t_try = k_grid(check_foc);
+%%
+tic 
+for i=1 : length(A_t_try)
+A_t = A_t_try( i );
+k_t1 = k_t1_try( i );
+k_t = k_t_try( i );
+
+foc_l = @(l_t,k_t,k_t1,A_t,nu,alpha,delta) (A_t .* k_t.^alpha .* l_t .^(1-alpha) - k_t1 + (1-delta)*k_t )...
+*(1-nu) - nu * (1-alpha) .* (1-l_t) .* A_t .* k_t.^alpha .* l_t .^(-alpha);
+        find_l = @(l_t)foc_l(l_t,k_t,k_t1,A_t,nu,alpha,delta);
+        l_t(i,1) = fzero(find_l,.5,options);
+end
+toc
+%%
+l_grid(index_foc_labor) = l_t;
+c_grid = NaN(a,b);
+c_grid=At .* k_grid.^alpha .* l_grid .^(1-alpha) - k_nextday + (1-delta) * k_grid;
+%%
+l_interval = 0:1/99:1;
+%%
+%utility
+u_grid = (c_grid.^nu.*(1-l_grid).^(1-nu)).^(1-1/gamma) ./ (1-1/gamma);
+u_grid(isnan(u_grid))=-inf;
+%check
+max(c_grid,[],2);
+length(find(ans<0))
+max(u_grid,[],2);
+sum(ans,2);
+length(find(ans==grid_number_k))
 
 %utility
 u_grid = (c_grid.^nu.*(1-l_grid).^(1-nu)).^(1-1/gamma) ./ (1-1/gamma);
