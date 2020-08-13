@@ -3,7 +3,7 @@
 %        Value function iteration                     %
 %              iterate over state variable            %
 %                     F.GAO. @8/7/2020                %
-%              Last modify   @8/10/2020                %
+%              Last modify   @8/7/2020                %
 %                                                     %
 %                                                     %
 %   Current problem:                                  %
@@ -27,9 +27,9 @@ alpha = 0.4;
 nu = 0.36;
 %set capital interval
 k_inf = 10;
-k_sup = 40;
+k_sup = 20;
 %dimensions
-grid_number_k = 500;
+grid_number_k = 101;
 grid_number_A = 21;
 total_dimension = grid_number_A * grid_number_k;
 %AR process to markov process
@@ -47,7 +47,7 @@ k_nextday = k_interval(k_nextday_index);
 k_nextday = (k_nextday);
 %set fzero option
 options = optimset('Display','off');
-%
+%%
 %labor and consumption
 %?%
 [a,b]=size(k_grid);
@@ -107,10 +107,6 @@ for i = 1 + (ii-1)*grid_number_k:ii*grid_number_k
 end
 end
 toc
-%3%
-load c_l_grid.mat;
-
-
 %%
 %4%
 At=repmat(A,[grid_number_k,1,1]);
@@ -124,7 +120,8 @@ check_foc = (At .* k_t.^alpha .* l_t ^(1-alpha) - k_t1 + (1-delta)* k_t )...
 *(1-nu) - nu * (1-alpha) * (1-l_t) * At .* k_t.^alpha .* l_t .^(-alpha);
 
 check_foc=logical(check_foc>=0);
-%%
+sum(check_foc)
+
 [a,b] = size(k_grid);
 index_foc_labor = [1:a*b];
 index_foc_labor = index_foc_labor(check_foc);
@@ -138,9 +135,9 @@ l_grid=NaN(a,b);
 A_t_try = At(check_foc);
 k_t1_try = k_nextday(check_foc);
 k_t_try = k_grid(check_foc);
-%%
+
 tic 
-for i=1 : length(A_t_try)
+parfor i=1 : length(A_t_try)
 A_t = A_t_try( i );
 k_t1 = k_t1_try( i );
 k_t = k_t_try( i );
@@ -151,35 +148,23 @@ foc_l = @(l_t,k_t,k_t1,A_t,nu,alpha,delta) (A_t .* k_t.^alpha .* l_t .^(1-alpha)
         l_t(i,1) = fzero(find_l,.5,options);
 end
 toc
-%%
+
 l_grid(index_foc_labor) = l_t;
 c_grid = NaN(a,b);
 c_grid=At .* k_grid.^alpha .* l_grid .^(1-alpha) - k_nextday + (1-delta) * k_grid;
-%%
+
 l_interval = 0:1/99:1;
+
+%utility
+u_grid = (c_grid.^nu.*(1-l_grid).^(1-nu)).^(1-1/gamma) ./ (1-1/gamma);
+u_grid(isnan(u_grid))=-inf;
+%check
+max(c_grid,[],2);
+length(find(ans<0))
+max(u_grid,[],2);
+sum(ans,2);
+length(find(ans==grid_number_k))
 %%
-%utility
-u_grid = (c_grid.^nu.*(1-l_grid).^(1-nu)).^(1-1/gamma) ./ (1-1/gamma);
-u_grid(isnan(u_grid))=-inf;
-%check
-max(c_grid,[],2);
-length(find(ans<0))
-max(u_grid,[],2);
-sum(ans,2);
-length(find(ans==grid_number_k))
-
-%utility
-u_grid = (c_grid.^nu.*(1-l_grid).^(1-nu)).^(1-1/gamma) ./ (1-1/gamma);
-u_grid(isnan(u_grid))=-inf;
-%check
-max(c_grid,[],2);
-length(find(ans<0))
-max(u_grid,[],2);
-sum(ans,2);
-length(find(ans==grid_number_k))
-%
-
-
 %%%%%%iteration setting %%%%%%
 %value grid
 v = zeros(grid_number_A,grid_number_k);
@@ -213,14 +198,15 @@ v = vnew;
 
 v = reshape(v,grid_number_A,grid_number_k);
 
+dpix = reshape(dpix,grid_number_A,grid_number_k);
 dpixold = dpix;
 
 end 
- 
+
 %reshape index matrix, 
-dpixx=reshape(dpix,grid_number_k,grid_number_A);
-dpixx=dpixx';
-k=k_interval(dpixx);
+%dpixx=reshape(dpix,grid_number_A,grid_number_k);
+%dpixx=dpixx';
+k=k_interval(dpix);
 %   %%
 %  for i=1:21
 %      for j =1:500
@@ -228,6 +214,7 @@ k=k_interval(dpixx);
 %          l_policy(i,j) =  l_grid(j+(i-1)*500,index);
 %      end
 %  end
+%%
 %%%%%%simulation%%%%%%
 %initials
 k_t = k_interval(round(grid_number_k/2));
@@ -238,15 +225,20 @@ X = [];
 for n=1:20000
     i = find(A==A_t);
     j = find(k_interval==k_t);
-
+    k_t1 = k(i,j);
+    
     L = sum(Cpai(i,:)<rand)+1;
     A0 = A(L);
-    k_t1 = k(L,j);
     
-    foc_l = @(l_t,k_t,k_t1,A_t,nu,alpha,delta) (A_t * k_t^alpha * l_t ^(1-alpha) - k_t1 + (1-delta)*k_t )...
-*(1-nu) - nu * (1-alpha) * (1-l_t) * A_t * k_t^alpha * l_t ^(-alpha);
-        find_l = @(l_t)foc_l(l_t,k_t,k_t1,A_t,nu,alpha,delta);
-		l=fzero(find_l,.5);
+    
+%    foc_l = @(l_t,k_t,k_t1,A_t,nu,alpha,delta) (A_t * k_t^alpha * l_t ^(1-alpha) - k_t1 + (1-delta)*k_t )...
+% *(1-nu) - nu * (1-alpha) * (1-l_t) * A_t * k_t^alpha * l_t ^(-alpha);
+%        find_l = @(l_t)foc_l(l_t,k_t,k_t1,A_t,nu,alpha,delta);
+% 		l=fzero(find_l,.5);
+    
+    jj = j + (i-1) * grid_number_k;
+    ii = k_interval==k_t1;
+    l = l_grid(jj,ii);
     
     y = A_t * k_t ^ alpha * l ^(1-alpha);
     c = y + (1-delta) * k_t - k_t1;
@@ -287,3 +279,12 @@ rows={'mean';'CV';'CV (in % of CV of gdp)';'corr. with gdp'};
 table_me =  array2table([mean_X;cv_X;cv_X_GDP;corr_X],'VariableNames',mynames);
 table_me2 = cell2table(rows,'VariableNames',{'Moments'});
 table = [table_me2 table_me]
+%%
+bar_A = median(A);
+kstar = (1/betta-1+delta)/median(A)/alpha;
+kstar = kstar^(1/(alpha-1));
+hstar = nu * (1-alpha) * bar_A * kstar^alpha;
+hstar = hstar/((1-nu*alpha)*bar_A*kstar^alpha - (1-nu)*delta*kstar);
+Cstar = (bar_A*kstar^alpha-delta*kstar)*hstar;
+ss = [ kstar hstar Cstar ]
+
