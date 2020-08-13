@@ -101,7 +101,7 @@ for n=1:11000
 
     L = sum(Cpai(i,:)<rand)+1;
     A0 = A(L);
-    k_tomorrow = k(L,j);
+    k_tomorrow = k(i,j);
     c = A_t * k_t ^ alpha + (1-delta) * k_t - k_tomorrow;
     
     k_t = k_tomorrow;
